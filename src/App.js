@@ -1,25 +1,36 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useState } from "react";
+import { Switch, Route, Redirect, BrowserRouter as Router } from 'react-router-dom';
+import { history } from "./history";
+
+import LoginForm from "./view/LoginForm"
+import HomePage from "./view/HomePage";
+import Lesson from "./view/Lesson";
+import New from "./view/New";
+import LessonDetail from "./view/LessonDetail";
+import ChannelDetail from "./view/ChannelDetail";
+import Event from "./view/Event"
+import "./dist/css/app.css"
 
 function App() {
+
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className="App" className="layout-height">
+      <Router history={history}>
+        <Switch>
+          <Route exact path="/" component={(props) => <LoginForm  {...props} />} />
+          <Route path="/home" component={(props) => <HomePage  {...props} />} />
+          <Route path="/lesson" component={(props) => <Lesson  {...props} />} />
+          <Route path="/new" component={(props) => <New  {...props} />} />
+          <Route path="/lessondetail" component={(props) => <LessonDetail  {...props} />} />
+          <Route path="/channeldetail" component={(props) => <ChannelDetail  {...props} />} />
+          <Route path="/event" component={(props) => <Event  {...props} />} />
+          <Redirect from="*" to="/" />
+        </Switch>
+      </Router>
     </div>
-  );
+  )
+
 }
 
 export default App;
