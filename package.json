@@ -14,6 +14,7 @@
     "axios": "^0.21.1",
     "firebase": "^8.7.1",
     "history": "^4.10.1",
+    "jwt-decode": "^3.1.2",
     "moment": "^2.29.1",
     "pad-left": "^2.1.0",
     "react": "^17.0.2",

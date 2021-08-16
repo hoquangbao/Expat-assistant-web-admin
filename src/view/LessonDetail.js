@@ -289,6 +289,9 @@ export default function LessonDetail() {
           <Menu.Item key="3" icon={<VideoCameraOutlined />}>
             <Link to="/appointment">Appointment</Link>
           </Menu.Item>
+          <Menu.Item key="4" icon={<VideoCameraOutlined />}>
+            <Link to="/event">Event</Link>
+          </Menu.Item>
         </Menu>
       </Sider>
       <Layout>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { Layout, Menu, Button, Typography, Modal, Input, Form, Upload, message } from 'antd';
-import { UploadOutlined, UserOutlined, VideoCameraOutlined, PlusOutlined, LoadingOutlined } from '@ant-design/icons';
+import { Layout, Menu, Button, Typography, Modal, Input, Form, Upload, message, Avatar, Dropdown, Affix } from 'antd';
+import { UploadOutlined, UserOutlined, VideoCameraOutlined, PlusOutlined, LoadingOutlined, DownOutlined } from '@ant-design/icons';
 import { Link } from 'react-router-dom'
 import '../dist/css/homepage.css'
 import { Table, Tag, Space } from 'antd';
@@ -15,6 +15,7 @@ const { Text } = Typography;
 export default function Lesson() {
   const [lessonData, setLessonData] = useState([]);
   const [lessonCreateModalContent, setLessonCreateModalContent] = useState({});
+  const [top, setTop] = useState(0);
 
   const [loading, setLoading] = useState();
   const [imgUrl, setImgUrl] = useState();
@@ -74,6 +75,14 @@ export default function Lesson() {
       ),
     },
   ];
+
+  const menu = (
+    <Menu>
+      <Menu.Item key="1" icon={<UserOutlined />}>
+        Logout
+      </Menu.Item>
+    </Menu>
+  );
 
   const token = localStorage.getItem('token')
 
@@ -300,10 +309,23 @@ export default function Lesson() {
           <Menu.Item key="3" icon={<VideoCameraOutlined />}>
             <Link to="/appointment">Appointment</Link>
           </Menu.Item>
+          <Menu.Item key="4" icon={<VideoCameraOutlined />}>
+            <Link to="/event">Event</Link>
+          </Menu.Item>
         </Menu>
       </Sider>
       <Layout>
-        <Header className="site-layout-sub-header-background" style={{ padding: 0 }} />
+        <Affix offsetTop={top}>
+          <Header className="site-layout-sub-header-background" style={{ padding: 0 }} >
+            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', padding: 10, paddingRight: 20 }}>
+              <Dropdown overlay={menu} trigger={['click']}>
+                <Button shape="circle" size="large">
+                  <UserOutlined />
+                </Button>
+              </Dropdown>
+            </div>
+          </Header>
+        </Affix>
         <Content style={{ margin: '24px 16px 0' }}>
           <div className="site-layout-background" style={{ padding: 24, minHeight: 360 }}>
             <Button onClick={showModal} type="primary" style={{ color: 'blue', marginBottom: '20px', marginLeft: '0', paddingRight: 30 }} size={"large"}>
@@ -312,7 +334,6 @@ export default function Lesson() {
             {/* Create Topic Modal */}
             <Modal
               title="Create New Lesson"
-              style={{ width: 700 }}
               visible={lessonCreateModalVisible}
               footer={[
                 <Button

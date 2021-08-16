@@ -118,12 +118,19 @@ export default function ChannelDetail() {
     fetchBlog();
   }, []);
 
-  const onOpenBlogUpdateModal = (record) => {
+  function onOpenBlogUpdateModal(record) {
     console.log(record)
     blogForm.setFieldsValue(record)
     setBlogModalContent(record)
-    var blogContent = blogModalContent.blogContent.replace(/(?:\r\n|\r|\n)/g, '<br>');
-    var blogContent = blogModalContent.blogContent.replace('<p>', '');
+    if (blogModalContent.blogContent !== undefined) {
+      setBlogContent();
+    }
+  }
+
+  function setBlogContent() {
+    var blogContent = ''
+    blogContent = blogModalContent.blogContent.replace(/(?:\r\n|\r|\n)/g, '<br>');
+    blogContent = blogModalContent.blogContent.replace('<p>', '');
     blogContent = blogContent.replace('</p>', '');
     blogContent = blogContent.replace(/<br\s*[\/]?>/gi, "\n")
     setBlogContentData(blogContent)
@@ -278,48 +285,48 @@ export default function ChannelDetail() {
     var blogContents = "<p>" + blogContent + "</p>"
     console.log(values.blogTitle)
     async function createBlog() {
-      // try {
-      //   const result = await axios.post(`https://hcmc.herokuapp.com/api/blogs/create`, {
-      //     "blogContent": blogContents,
-      //     "blogTitle": values.blogTitle,
-      //     "category": {
-      //       "categoryId": category.categoryId,
-      //     },
-      //     "channel": {
-      //       "channelId": channelId,
-      //     },
-      //     "cover_link": preparedData.cover_link,
-      //     "createBy": id,
-      //     "createDate": datetime,
-      //     "priority": 1,
-      //   }, { headers: { "content-type": "application/json", "Authorization": `Bearer ${token}` } }
-      //   )
-      //   console.log(result)
-      //   if (result.status === 200) {
-      //     setBlogData(blogData.map(row => {
-      //       if (row.id === blogData.id) {
-      //         return {
-      //           ...row,
-      //           ...values
-      //         }
-      //       }
-      //       return row;
-      //     }))
-      //     console.log("success")
-      //     setBlogCreateModalVisible(false)
-      //   } else {
-      //     message.error({
-      //       content: 'Something went wrong!',
-      //       style: {
-      //         position: 'fixed',
-      //         bottom: '10px',
-      //         left: '50%'
-      //       }
-      //     })
-      //   }
-      // } catch (e) {
-      //   console.log(e)
-      // }
+      try {
+        const result = await axios.post(`https://hcmc.herokuapp.com/api/blogs/create`, {
+          "blogContent": blogContents,
+          "blogTitle": values.blogTitle,
+          "category": {
+            "categoryId": category.categoryId,
+          },
+          "channel": {
+            "channelId": channelId,
+          },
+          "cover_link": preparedData.cover_link,
+          "createBy": id,
+          "createDate": datetime,
+          "priority": 1,
+        }, { headers: { "content-type": "application/json", "Authorization": `Bearer ${token}` } }
+        )
+        console.log(result)
+        if (result.status === 200) {
+          setBlogData(blogData.map(row => {
+            if (row.id === blogData.id) {
+              return {
+                ...row,
+                ...values
+              }
+            }
+            return row;
+          }))
+          console.log("success")
+          setBlogCreateModalVisible(false)
+        } else {
+          message.error({
+            content: 'Something went wrong!',
+            style: {
+              position: 'fixed',
+              bottom: '10px',
+              left: '50%'
+            }
+          })
+        }
+      } catch (e) {
+        console.log(e)
+      }
     }
     createBlog();
   }
@@ -347,6 +354,9 @@ export default function ChannelDetail() {
           <Menu.Item key="3" icon={<VideoCameraOutlined />}>
             <Link to="/appointment">Appointment</Link>
           </Menu.Item>
+          <Menu.Item key="4" icon={<VideoCameraOutlined />}>
+            <Link to="/event">Event</Link>
+          </Menu.Item>
         </Menu>
       </Sider>
       <Layout>
@@ -359,7 +369,7 @@ export default function ChannelDetail() {
 
             <Modal
               title="Create New Blog"
-              style={{ width: 700 }}
+              width={1000}
               visible={blogCreateModalVisible}
               footer={[
                 <Button
@@ -437,7 +447,7 @@ export default function ChannelDetail() {
 
             <Modal
               title="Update Blog"
-              style={{ width: 700 }}
+              width={1000}
               visible={blogUpdateModalVisible}
               footer={[
                 <Button
@@ -478,7 +488,7 @@ export default function ChannelDetail() {
                     <TextArea
                       style={{ width: '100%' }}
                       value={blogContentData}
-                      rows={4}
+                      rows={14}
                       placeholder="Blog Content" >
                     </TextArea>
                   </div>
