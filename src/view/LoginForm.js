@@ -5,6 +5,7 @@ import { Redirect } from 'react-router';
 import { history } from '../history';
 import logo from '../images/Untitled 2.png'
 import jwt_decode from "jwt-decode";
+import { loginFirebase } from '../firebase/auth';
 
 function LoginForm({ props }) {
   const [user, setUser] = useState({ email: "", password: "" });
@@ -28,7 +29,7 @@ function LoginForm({ props }) {
 
     async function login() {
       try {
-        await axios.post('https://hcmc.herokuapp.com/api/authen/login', data).then(res => {
+        await axios.post('https://hcmc.herokuapp.com/api/admin/login', data).then(res => {
           localStorage.setItem('token', res.data.token)
           console.log(props)
           if (res.status === 200) {
@@ -46,9 +47,9 @@ function LoginForm({ props }) {
               setRedirect(true);
               var token = res.data.token;
               var decode = jwt_decode(token);
-              var id = decode['id']
-              localStorage.setItem('id', id)
-              history.push('/lesson')
+              var id = decode['staff-id']
+              localStorage.setItem('adminId', id)
+              loginFirebase(data)
             }
           } else {
             message.error({
@@ -61,6 +62,7 @@ function LoginForm({ props }) {
             })
           }
         })
+        history.push('/lesson')
 
       } catch (e) {
         console.log(e)
@@ -71,11 +73,12 @@ function LoginForm({ props }) {
   }
 
 
-  useEffect(() => {
-    if (redirect == true) {
-      return <Redirect to="/appointment" />
-    };
-  })
+  // useEffect(() => {
+  //   const token = localStorage.getItem('token')
+  //   if (token !== 'fail' || token !== "" || token !== undefined) {
+  //     history.push('/lesson')
+  //   };
+  // })
 
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '70vh' }}>

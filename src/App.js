@@ -9,6 +9,7 @@ import New from "./view/New";
 import LessonDetail from "./view/LessonDetail";
 import ChannelDetail from "./view/ChannelDetail";
 import Event from "./view/Event"
+import Location from "./view/Location";
 import "./dist/css/app.css"
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
           <Route path="/lessondetail" component={(props) => <LessonDetail  {...props} />} />
           <Route path="/channeldetail" component={(props) => <ChannelDetail  {...props} />} />
           <Route path="/event" component={(props) => <Event  {...props} />} />
+          <Route path="/location" component={(props) => <Location  {...props} />} />
           <Redirect from="*" to="/" />
         </Switch>
       </Router>

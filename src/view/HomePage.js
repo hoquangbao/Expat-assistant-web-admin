@@ -28,9 +28,6 @@ export default function HomePage() {
           <Menu.Item key="2" icon={<VideoCameraOutlined />}>
             <Link to="/new">New</Link>
           </Menu.Item>
-          <Menu.Item key="3" icon={<VideoCameraOutlined />}>
-            <Link to="/appointment">Appointment</Link>
-          </Menu.Item>
         </Menu>
       </Sider>
       <Layout>

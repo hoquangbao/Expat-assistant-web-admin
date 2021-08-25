@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Layout, Menu } from 'antd';
-import { Table, Tag, Space, Image, Typography, Form, message, Button, Modal, Input, Upload, Row } from 'antd';
-import { UploadOutlined, UserOutlined, VideoCameraOutlined, PlusOutlined } from '@ant-design/icons';
+import { Table, Tag, Space, Image, Typography, Form, message, Button, Modal, Input, Upload, Row, Affix, Dropdown } from 'antd';
+import { UploadOutlined, UserOutlined, VideoCameraOutlined, PlusOutlined, LogoutOutlined } from '@ant-design/icons';
 import padLeft from 'pad-left';
 import axios from 'axios';
 import moment from 'moment';
@@ -22,12 +22,14 @@ export default function ChannelDetail() {
   const [blogUpdateModalVisible, setBlogUpdateModalVisible] = useState(false);
   const [blogModalContent, setBlogModalContent] = useState({});
   const [blogContentData, setBlogContentData] = useState();
+  const [top, setTop] = useState(0);
+
 
   const [blogForm] = Form.useForm()
 
   const channelId = window.location.pathname.split('/').reverse()[0]
   const token = localStorage.getItem('token')
-  const id = localStorage.getItem('id')
+  const id = localStorage.getItem('adminId')
 
   const columns = [
     {
@@ -59,6 +61,7 @@ export default function ChannelDetail() {
       dataIndex: 'blogTitle',
       key: 'blogTitle',
     },
+
     {
       title: 'Cover Image',
       dataIndex: 'cover_link',
@@ -108,6 +111,17 @@ export default function ChannelDetail() {
           setCategory(category)
           setBlogData(tableData)
           setChannelData(channelData)
+          setBlogModalContent({
+            ...blogModalContent,
+            category: {
+              categoryId: category.categoryId
+            },
+            channel: {
+              channelId: channelId
+            },
+            priority: 1,
+            createBy: id,
+          })
         }).catch(error => {
           console.log(error)
         })
@@ -116,6 +130,7 @@ export default function ChannelDetail() {
       }
     }
     fetchBlog();
+
   }, []);
 
   function onOpenBlogUpdateModal(record) {
@@ -123,8 +138,11 @@ export default function ChannelDetail() {
     blogForm.setFieldsValue(record)
     setBlogModalContent(record)
     if (blogModalContent.blogContent !== undefined) {
-      setBlogContent();
+      const blogContent = setBlogContent();
+      setBlogContentData(blogContent)
     }
+    setBlogUpdateModalVisible(true);
+
   }
 
   function setBlogContent() {
@@ -133,8 +151,7 @@ export default function ChannelDetail() {
     blogContent = blogModalContent.blogContent.replace('<p>', '');
     blogContent = blogContent.replace('</p>', '');
     blogContent = blogContent.replace(/<br\s*[\/]?>/gi, "\n")
-    setBlogContentData(blogContent)
-    setBlogUpdateModalVisible(true);
+    return blogContent
   }
 
   function showBlogModal() {
@@ -199,22 +216,27 @@ export default function ChannelDetail() {
     }
   }
 
+
   function onBlogFormFinish(values) {
-    const preparedData = {
-      ...values,
-      ...blogModalContent,
-    }
+
+
     var currentdate = new Date();
     const month = padLeft(currentdate.getMonth() + 1, 2, '0')
     const date = padLeft(currentdate.getDate(), 2, '0')
     const hour = padLeft(currentdate.getHours(), 2, '0')
     const minute = padLeft(currentdate.getMinutes(), 2, '0')
     const second = padLeft(currentdate.getSeconds(), 2, '0')
-    var datetime = currentdate.getFullYear() + "-"
+    var createDate = currentdate.getFullYear() + "-"
       + month + "-"
       + date + "T" + hour + ":"
       + minute + ":"
       + second;
+    const preparedData = {
+      ...blogModalContent,
+      ...values,
+      ...{ createDate }
+    }
+    console.log(preparedData)
     var blogContent = values.blogContent.replace(/(?:\r\n|\r|\n)/g, '<br>');
     var blogContents = "<p>" + blogContent + "</p>"
     async function createBlog() {
@@ -230,21 +252,38 @@ export default function ChannelDetail() {
           },
           "cover_link": preparedData.cover_link,
           "createBy": id,
-          "createDate": datetime,
+          "createDate": createDate,
           "priority": 1,
         }, { headers: { "content-type": "application/json", "Authorization": `Bearer ${token}` } }
         )
         console.log(result)
-        if (result.status === 200) {
-          setBlogData(blogData.map(row => {
-            if (row.id === blogData.id) {
-              return {
-                ...row,
-                ...values
-              }
-            }
-            return row;
-          }))
+        if (result.status === 200 || result.status === 201) {
+          await axios.get(`https://hcmc.herokuapp.com/api/blogs/channel?channelId=${channelId}&page=0&size=100&sortBy=blogId`,
+            { headers: { "content-type": "application/json", "Authorization": `Bearer ${token}` } },
+          ).then(res => {
+            console.log(res)
+            const tableData = res.data.listBlog.map(blog => ({
+              ...blog,
+            }))
+            const channelData = res.data.listBlog[0].channel
+            const category = res.data.listBlog[0].category
+            setCategory(category)
+            setBlogData(tableData)
+            setChannelData(channelData)
+            setBlogModalContent({
+              ...blogModalContent,
+              category: {
+                categoryId: category.categoryId
+              },
+              channel: {
+                channelId: channelId
+              },
+              priority: 1,
+              createBy: id,
+            })
+          }).catch(error => {
+            console.log(error)
+          })
           console.log("success")
           setBlogCreateModalVisible(false)
         } else {
@@ -283,12 +322,13 @@ export default function ChannelDetail() {
       + second;
     var blogContent = values.blogContent.replace(/(?:\r\n|\r|\n)/g, '<br>');
     var blogContents = "<p>" + blogContent + "</p>"
-    console.log(values.blogTitle)
+    console.log(preparedData)
     async function createBlog() {
       try {
-        const result = await axios.post(`https://hcmc.herokuapp.com/api/blogs/create`, {
+        const result = await axios.put(`https://hcmc.herokuapp.com/api/blogs/update`, {
           "blogContent": blogContents,
           "blogTitle": values.blogTitle,
+          "blogId": preparedData.blogId,
           "category": {
             "categoryId": category.categoryId,
           },
@@ -302,18 +342,24 @@ export default function ChannelDetail() {
         }, { headers: { "content-type": "application/json", "Authorization": `Bearer ${token}` } }
         )
         console.log(result)
-        if (result.status === 200) {
-          setBlogData(blogData.map(row => {
-            if (row.id === blogData.id) {
-              return {
-                ...row,
-                ...values
-              }
-            }
-            return row;
-          }))
+        if (result.status === 200 || result.status === 201) {
+          await axios.get(`https://hcmc.herokuapp.com/api/blogs/channel?channelId=${channelId}&page=0&size=100&sortBy=blogId`,
+            { headers: { "content-type": "application/json", "Authorization": `Bearer ${token}` } },
+          ).then(res => {
+            console.log(res)
+            const tableData = res.data.listBlog.map(blog => ({
+              ...blog,
+            }))
+            const channelData = res.data.listBlog[0].channel
+            const category = res.data.listBlog[0].category
+            setCategory(category)
+            setBlogData(tableData)
+            setChannelData(channelData)
+          }).catch(error => {
+            console.log(error)
+          })
           console.log("success")
-          setBlogCreateModalVisible(false)
+          setBlogUpdateModalVisible(false)
         } else {
           message.error({
             content: 'Something went wrong!',
@@ -330,6 +376,21 @@ export default function ChannelDetail() {
     }
     createBlog();
   }
+
+  const menu = (
+    <Menu>
+      <Menu.Item key="1" icon={<LogoutOutlined />} onClick={() => onClickLogout()}>
+        <Link to="/">Logout</Link>
+      </Menu.Item>
+    </Menu>
+  );
+
+  function onClickLogout() {
+    localStorage.setItem('token', "");
+    localStorage.setItem('id', "");
+  }
+
+  console.log(blogContentData)
 
   return (
     <Layout className="ant-layout">
@@ -352,15 +413,25 @@ export default function ChannelDetail() {
             <Link to="/new">New</Link>
           </Menu.Item>
           <Menu.Item key="3" icon={<VideoCameraOutlined />}>
-            <Link to="/appointment">Appointment</Link>
+            <Link to="/event">Event</Link>
           </Menu.Item>
           <Menu.Item key="4" icon={<VideoCameraOutlined />}>
-            <Link to="/event">Event</Link>
+            <Link to="/location">Location</Link>
           </Menu.Item>
         </Menu>
       </Sider>
       <Layout>
-        <Header className="site-layout-sub-header-background" style={{ padding: 0 }} />
+        <Affix offsetTop={top}>
+          <Header className="site-layout-sub-header-background" style={{ padding: 0 }} >
+            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', padding: 10, paddingRight: 20 }}>
+              <Dropdown overlay={menu} trigger={['click']}>
+                <Button shape="circle" size="large">
+                  <UserOutlined />
+                </Button>
+              </Dropdown>
+            </div>
+          </Header>
+        </Affix>
         <Content style={{ margin: '24px 16px 0' }}>
           <div className="site-layout-background" style={{ padding: 24, minHeight: 360 }}>
             <Button onClick={showBlogModal} type="primary" style={{ color: 'blue', marginBottom: '20px', marginLeft: '0', paddingRight: 30 }} size={"large"}>
@@ -473,35 +544,30 @@ export default function ChannelDetail() {
                 onFinishFailed={(e) => console.log(e)}>
                 <Form.Item
                   name="blogTitle"
-                  rules={[{ required: true, message: 'This field is required!' }]}>
-                  <div style={{ width: '100%', paddingBottom: 20 }}>
-                    <Input
-                      style={{ width: '100%' }}
-                      value={blogModalContent.blogTitle}
-                      placeholder="Blog Title" />
-                  </div>
+                  rules={[{ required: true, message: 'This field is required!' }]}
+                  initialValue={blogModalContent.blogTitle}>
+                  <Input
+                    style={{ width: '100%' }}
+                    placeholder="Blog Title" />
                 </Form.Item>
                 <Form.Item
                   name="blogContent"
-                  rules={[{ required: true, message: 'This field is required!' }]}>
-                  <div style={{ width: '100%', paddingBottom: 20 }}>
-                    <TextArea
-                      style={{ width: '100%' }}
-                      value={blogContentData}
-                      rows={14}
-                      placeholder="Blog Content" >
-                    </TextArea>
-                  </div>
+                  rules={[{ required: true, message: 'This field is required!' }]}
+                  initialValue={blogModalContent.blogContent}>
+                  <TextArea
+                    style={{ width: '100%' }}
+                    rows={14}
+                    placeholder="Blog Content" >
+                  </TextArea>
                 </Form.Item>
                 <Form.Item
-                  name="channel">
-                  <div style={{ width: '100%', paddingBottom: 20 }}>
-                    <Input
-                      style={{ width: '100%' }}
-                      value={channelId}
-                      rows={4}
-                      disabled />
-                  </div>
+                  name="channelId"
+                  initialValue={channelId}>
+                  <Input
+                    style={{ width: '100%' }}
+                    value={channelId}
+                    rows={4}
+                    disabled />
                 </Form.Item>
                 <div style={{ width: '100%', paddingBottom: 20 }}>
                   <h3>Image</h3>

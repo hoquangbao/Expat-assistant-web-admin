@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Layout, Menu, Button, Typography, Modal, Input, Form, Upload, message, Avatar, Dropdown, Affix } from 'antd';
-import { UploadOutlined, UserOutlined, VideoCameraOutlined, PlusOutlined, LoadingOutlined, DownOutlined } from '@ant-design/icons';
+import { UploadOutlined, UserOutlined, VideoCameraOutlined, PlusOutlined, LoadingOutlined, DownOutlined, LogoutOutlined } from '@ant-design/icons';
 import { Link } from 'react-router-dom'
 import '../dist/css/homepage.css'
 import { Table, Tag, Space } from 'antd';
@@ -70,7 +70,6 @@ export default function Lesson() {
       render: (record) => (
         <Space size="middle">
           <Button type="primary" onClick={() => onOpenTopicUpdateModal(record)}>Update</Button>
-          <a>Delete</a>
         </Space>
       ),
     },
@@ -78,11 +77,16 @@ export default function Lesson() {
 
   const menu = (
     <Menu>
-      <Menu.Item key="1" icon={<UserOutlined />}>
-        Logout
+      <Menu.Item key="1" icon={<LogoutOutlined />} onClick={() => onClickLogout()}>
+        <Link to="/">Logout</Link>
       </Menu.Item>
     </Menu>
   );
+
+  function onClickLogout() {
+    localStorage.setItem('token', "");
+    localStorage.setItem('id', "");
+  }
 
   const token = localStorage.getItem('token')
 
@@ -151,16 +155,16 @@ export default function Lesson() {
 
   const uploadLessonImg = async (file) => {
     let identify = file.name + '__' + Date.now();
-    let imgURL;
+    let topicImage;
     await storage.ref(`image/${identify}`).put(file);
     await storage.ref(`image/`).child(identify).getDownloadURL().then(url => {
-      imgURL = url;
+      topicImage = url;
     })
     setLessonCreateModalContent({
       ...lessonCreateModalContent,
-      image: imgURL
+      topicImage: topicImage
     })
-    return imgURL
+    return topicImage
   }
 
   const handleLessonImageChange = info => {
@@ -169,10 +173,10 @@ export default function Lesson() {
     }
     if (info.file.status === 'done') {
       // Get this url from response in real world.
-      getBase64(info.file.originFileObj, imageUrl => {
+      getBase64(info.file.originFileObj, topicImage => {
         setLessonCreateModalContent({
           ...lessonCreateModalContent,
-          image: imageUrl
+          topicImage: topicImage
         })
       }
       );
@@ -199,27 +203,21 @@ export default function Lesson() {
       ...values,
       ...lessonCreateModalContent,
     }
+    console.log(lessonModalDatapreparedData)
     async function createLesson() {
       try {
         const result = await axios.post('https://hcmc.herokuapp.com/api/topic/createTopic', {
 
-          "topicDesc": lessonModalDatapreparedData.topicDescription,
-          "topicImage": lessonModalDatapreparedData.image,
+          "topicDesc": lessonModalDatapreparedData.topicDesc,
+          "topicImage": lessonModalDatapreparedData.topicImage,
           "topicName": lessonModalDatapreparedData.topicName,
           "topicStatus": 1,
         },
           { headers: { "content-type": "application/json", "Authorization": `Bearer ${token}` } }
         )
-        if (result.code === 200) {
-          setLessonData(lessonData.map(row => {
-            if (row.id === lessonData.id) {
-              return {
-                ...row,
-                ...values
-              }
-            }
-            return row;
-          }))
+        console.log(result)
+        if (result.status === 200 || result.status === 201) {
+          setLessonData(lessonData => [...lessonData, lessonModalDatapreparedData])
           console.log("success")
           setLessonCreateModalVisible(false)
         } else {
@@ -255,18 +253,17 @@ export default function Lesson() {
         },
           { headers: { "content-type": "application/json", "Authorization": `Bearer ${token}` } }
         )
-        if (result.code === 200) {
-          setLessonData(() =>
-            lessonData.map(row => {
-              if (row.id === lessonCreateModalContent.id) {
-                return {
-                  ...row,
-                  ...values
-                }
-              }
-              return row
-            })
-          )
+        if (result.status === 200 || result.status === 201) {
+          await axios.get('https://hcmc.herokuapp.com/api/topic/topics',
+            { headers: { "content-type": "application/json", "Authorization": `Bearer ${token}` } },
+          ).then(res => {
+            const tableData = res.data.map(lesson => ({
+              ...lesson
+            }))
+            setLessonData(tableData)
+          }).catch(error => {
+            console.log(error)
+          })
           console.log("success")
           setLessonUpdateModalVisible(false)
         } else {
@@ -299,7 +296,7 @@ export default function Lesson() {
         }}
       >
         <div className="logo" />
-        <Menu theme="dark" mode="inline" defaultSelectedKeys={['4']}>
+        <Menu theme="dark" mode="inline">
           <Menu.Item key="1" icon={<UserOutlined />}>
             <Link to="/lesson">Lessons</Link>
           </Menu.Item>
@@ -307,10 +304,10 @@ export default function Lesson() {
             <Link to="/new">New</Link>
           </Menu.Item>
           <Menu.Item key="3" icon={<VideoCameraOutlined />}>
-            <Link to="/appointment">Appointment</Link>
+            <Link to="/event">Event</Link>
           </Menu.Item>
           <Menu.Item key="4" icon={<VideoCameraOutlined />}>
-            <Link to="/event">Event</Link>
+            <Link to="/location">Location</Link>
           </Menu.Item>
         </Menu>
       </Sider>
@@ -358,7 +355,7 @@ export default function Lesson() {
                 onFinish={onLessonFormFinish}
                 onFinishFailed={(e) => console.log(e)}>
                 <Form.Item
-                  name="topicDescription"
+                  name="topicDesc"
                   rules={[{ required: true, message: 'This field is required!' }]}>
                   <div style={{ width: '100%', paddingBottom: 20 }}>
                     <Input
@@ -384,7 +381,7 @@ export default function Lesson() {
                     onChange={handleLessonImageChange}
                   >
                     {
-                      lessonCreateModalContent.image ? <img src={lessonCreateModalContent.image} style={{ width: '100%' }} alt={lessonCreateModalContent.image} /> :
+                      lessonCreateModalContent.topicImage ? <img src={lessonCreateModalContent.topicImage} style={{ width: '100%' }} alt={lessonCreateModalContent.topicImage} /> :
                         <div>
                           <PlusOutlined />
                           <div style={{ marginTop: 8 }}>Upload</div>
